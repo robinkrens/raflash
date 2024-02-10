@@ -34,18 +34,20 @@ STATUS_OK = 0x00
 STATUS_ERR = 0x80
 
 # Error codes
-ERR_UNSU = 0xC
-ERR_PCKT = 0xC1
-ERR_CHKS = 0xC2
-ERR_FLOW = 0xC3
-ERR_ADDR = 0xD0
-ERR_BAUD = 0xD4
-ERR_PROT = 0xDA
-ERR_ID = 0xDB
-ERR_SERI = 0xDC
-ERR_ERA = 0xE1
-ERR_WRI = 0xE2
-ERR_SEQ = 0xE7
+error_codes = {
+    0xC: "ERR_UNSU",
+    0xC1: "ERR_PCKT",
+    0xC2: "ERR_CHKS",
+    0xC3: "ERR_FLOW",
+    0xD0: "ERR_ADDR",
+    0xD4: "ERR_BAUD",
+    0xDA: "ERR_PROT",
+    0xDB: "ERR_ID",
+    0xDC: "ERR_SERI",
+    0xE1: "ERR_ERA",
+    0xE2: "ERR_WRI",
+    0xE7: "ERR_SEQ"
+}
 
 # used for init sequence
 LOW_PULSE = 0x00
@@ -74,7 +76,7 @@ def calc_sum(cmd, data):
 
 
 # format of data packet is [SOD|LNH|LNL|COM|byte_data|SUM|ETX]
-def format_command(cmd, data):
+def pack_command(cmd, data):
     SOD = 0x01
     COM = cmd
 
@@ -93,7 +95,7 @@ def format_command(cmd, data):
     return fmt
 
 # format of data packet is [SOD|LNH|LNL|RES|DAT|SUM|ETX]
-def format_data(res, data):
+def pack_pkt(res, data):
     SOD = 0x81
     if (len(data) >= 1024):
         raise Exception(f'Data packet too large, data length is {DATA_LEN} (>1024)')
@@ -105,21 +107,21 @@ def format_data(res, data):
     fmt_footer = 'BB'
     fmt = fmt_header + str(len(data)) + 's' + fmt_footer
     pack = struct.pack(fmt, SOD, LNH, LNL, RES, DAT, SUM, ETX)
-    print(fmt, pack, len(pack))
+    return pack
 
 # packet received from mcu 
-def unpack_header(data):
+def unpack_pkt(data):
     header = data[0:4]
     fmt_header = '<BBBB'
     SOD, LNH, LNL, RES = struct.unpack(fmt_header, header)
     if (SOD != 0x81):
         raise Exception(f'Wrong start of packet data received')
     pkt_len = (LNH << 0x8 | LNL) - 1
-    if (RES & 0x80):
-        raise Exception(f'MCU encountered error {RES & 0x7F}')
     fmt_message = '<' + str(pkt_len) + 's'
     raw = struct.unpack_from(fmt_message, data, 4)[0]
     message = ['0x{:02X}'.format(byte) for byte in raw]
+    if (RES & 0x80):
+        raise ValueError(f'MCU encountered error {message[0]}')
     fmt_footer = '<BB'
     SUM, ETX = struct.unpack_from(fmt_footer, data, 4 + pkt_len)
     lnh, lnl, local_sum = calc_sum(RES, message)
@@ -128,18 +130,9 @@ def unpack_header(data):
     if (ETX != 0x03):
         raise Exception(f'Packet ETX error')
     return message
-
     
 
-cmd = format_command(INQ_CMD, "")
-cmd = format_command(BAU_CMD, ['0x00','0x1E'])
-cmd = format_command(IDA_CMD, TESTID)
+cmd = pack_command(INQ_CMD, "")
+cmd = pack_command(BAU_CMD, ['0x00','0x1E'])
+cmd = pack_command(IDA_CMD, TESTID)
 
-format_data(0x13, ['0x00','0x01','0x02'])
-format_data(0x34, ['0x00'])
-format_data(0x00, ['0x00'])
-format_data(0x12, ['0x00'])
-
-#print(unpack_header(b'\x81\x00\x02\x08\xC0\x12\x03'))
-#print(unpack_header(b'\x81\x00\x03\x08\xC0\xD0\x12\x03'))
-print(unpack_header(b'\x81\x00\x02\x00\x00\xFE\x03'))

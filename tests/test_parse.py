@@ -16,3 +16,8 @@ def test_pack_unpack():
     assert unpack_pkt(pack_pkt(0x34, ['0x00'])) == ['0x00']
     assert unpack_pkt(pack_pkt(0x00, ['0x00'])) == ['0x00']
     assert unpack_pkt(pack_pkt(0x12, ['0x00'])) == ['0x00']
+
+def test_err_unpack():
+    with pytest.raises(ValueError, match=r".*0xC3.*") as excinfo:
+        unpack_pkt(b'\x81\x00\x02\x93\xC3\x38\x03')
+    assert str(excinfo.value) == 'MCU encountered error 0xC3'
