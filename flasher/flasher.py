@@ -126,7 +126,7 @@ def unpack_pkt(data):
     SUM, ETX = struct.unpack_from(fmt_footer, data, 4 + pkt_len)
     lnh, lnl, local_sum = calc_sum(RES, message)
     if (SUM != local_sum):
-        raise Exception(f'Sum calculation mismatch, read {local_sum} instead of {SUM}')
+        raise Exception(f'Sum calculation mismatch, read {SUM} instead of {local_sum}')
     if (ETX != 0x03):
         raise Exception(f'Packet ETX error')
     return message
