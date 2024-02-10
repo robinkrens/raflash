@@ -1,0 +1,8 @@
+from flasher.flasher import calc_sum
+import pytest
+
+def test_calc_sum():
+    assert calc_sum(0x12, ['0x00']) == (0, 0x2, 0xEC)
+    assert calc_sum(0x34, ['0x00']) == (0, 0x2, 0xCA)
+    assert calc_sum(0x00, ['0x00']) == (0, 0x02, 0xFE)
+
