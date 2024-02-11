@@ -6,6 +6,12 @@ from RAPacker import *
 
 SECTOR_SIZE = 2048
 
+def int_to_hex_list(num):
+    hex_string = hex(num)[2:].upper()  # convert to hex string
+    hex_string = hex_string.zfill(8) # pad for 8 char's long
+    hex_list = [f'0x{hex_string[c:c+2]}' for c in range(0, 8, 2)]
+    return hex_list
+
 def get_dev_info(dev):
 
     packed = pack_pkt(SIG_CMD, "")
@@ -43,7 +49,12 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
     if (end_addr <= start_addr or end_addr > 0xFF800):
         raise ValueError("end address value error")
 
-    # @TODO setup initial communication
+    # setup initial communication
+    SAD = int_to_hex_list(start_addr)
+    EAD = int_to_hex_list(end_addr)
+    packed = pack_pkt(WRI_CMD, SAD + EAD)
+    dev.send_data(packed)
+    ret = dev.recv_data(7)
 
     with open(img, 'rb') as f:
         chunk = f.read(chunk_size)
