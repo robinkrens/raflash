@@ -63,7 +63,7 @@ TESTID = [
 
 def calc_sum(cmd, data):
     data_len = len(data)
-    lnh = data_len + 1 & 0xFF00
+    lnh = (data_len + 1 & 0xFF00) >> 8
     lnl = data_len + 1 & 0x00FF
     res = lnh + lnl + cmd
     for i in range(data_len):
