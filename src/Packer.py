@@ -69,6 +69,8 @@ def calc_sum(cmd, data):
     for i in range(data_len):
             if isinstance(data[i], str):
                 res += int(data[i], 16)
+            elif isinstance(data[i], int):
+                res += data[i]
             else:
                 res += ord(data[i])
     res = ~(res - 1) & 0xFF # two's complement
@@ -100,7 +102,10 @@ def pack_pkt(res, data):
     if (len(data) >= 1024):
         raise Exception(f'Data packet too large, data length is {DATA_LEN} (>1024)')
     LNH, LNL, SUM = calc_sum(int(res), data)
-    DAT = bytes([int(x, 16) for x in data])
+    if not isinstance(data, bytes):
+        DAT = bytes([int(x, 16) for x in data])
+    else:
+        DAT = data
     RES = res
     ETX = 0x03
     fmt_header = '<BBBB'
@@ -132,7 +137,7 @@ def unpack_pkt(data):
     return message
     
 
-cmd = pack_command(INQ_CMD, "")
-cmd = pack_command(BAU_CMD, ['0x00','0x1E'])
-cmd = pack_command(IDA_CMD, TESTID)
+#cmd = pack_command(INQ_CMD, "")
+#cmd = pack_command(BAU_CMD, ['0x00','0x1E'])
+#cmd = pack_command(IDA_CMD, TESTID)
 

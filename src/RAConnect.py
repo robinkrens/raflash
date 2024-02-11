@@ -3,6 +3,8 @@ import time
 import usb.core
 import usb.util
 
+MAX_TRANSFER_SIZE = 64
+
 class RAConnect:
     def __init__(self, vendor_id, product_id):
         self.vendor_id = vendor_id
@@ -64,14 +66,43 @@ class RAConnect:
                 print(f"Timeout: retry #{i}", e)
         return False
 
-# Usage
-communicator = RAConnect(vendor_id=0x1a86, product_id=0x7523)
+    def authenticate_connection(self):
+        raise Exception("Not implemented")
 
-if not communicator.establish_connection():
-    print("Cannot connect")
-    sys.exit(0)
+    def send_data(self, packed_data):
+        if (self.tx_ep == None):
+            return False
+        try:
+            self.tx_ep.write(packed_data, self.timeout_ms)
+        except usb.core.USBError as e:
+            print(f"Timeout: error", e)
+            return False
+        return True
 
-if not communicator.confirm_connection():
-    print("Failed to confirm boot code")
-    sys.exit(0)
+    # packets are length 7, except for a read package
+    def recv_data(self, exp_len):
+        if (exp_len > MAX_TRANSFER_SIZE):
+            raise ValueError(f"length package {exp_len} over max transfer size")
+        if (self.rx_ep == None):
+            return False
+        try:
+            msg = self.rx_ep.read(exp_len, self.timeout_ms)
+        except usb.core.USBError as e:
+            print(f"Timeout: error", e)
+            return False
+        return msg
+
+
+#communicator = RAConnect(vendor_id=0x1a86, product_id=0x7523)
+
+#communicator.send_data(b'\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA')
+#communicator.recv_data(7)
+
+#if not communicator.establish_connection():
+#    print("Cannot connect")
+#    sys.exit(0)
+#
+#if not communicator.confirm_connection():
+#    print("Failed to confirm boot code")
+#    sys.exit(0)
 
