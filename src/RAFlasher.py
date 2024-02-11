@@ -1,5 +1,6 @@
 import os
 import math
+import argparse
 from RAConnect import *
 from RAPacker import *
 
@@ -45,7 +46,40 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
                 print(msg)
             chunk = f.read(chunk_size)
 
+def main():
+    parser = argparse.ArgumentParser(description="RA Flasher Tool")
 
-dev = RAConnect(vendor_id=0x1a86, product_id=0x7523)
-write_img(dev, 'src/sample.bin', 0x800, None, True)
+    subparsers = parser.add_subparsers(dest="command", title="Commands")
+
+    # Subparser for the write command
+    write_parser = subparsers.add_parser("write", help="Write data to flash")
+    write_parser.add_argument("--start_address", type=int, default=0x0000, help="Start address")
+    write_parser.add_argument("--end_address", type=int, help="End address")
+    write_parser.add_argument("--verify", action="store_true", help="Verify after writing")
+    write_parser.add_argument("file_name", type=str, help="File name")
+
+    # Subparser for the read command
+    read_parser = subparsers.add_parser("read", help="Read data from flash")
+    read_parser.add_argument("--start_address", type=int, default=0x000, help="Start address")
+    read_parser.add_argument("--size", type=int, default=1024, help="Size in bytes")
+    read_parser.add_argument("file_name", type=str, help="File name")
+
+    # Subparser for the info command
+    subparsers.add_parser("info", help="Show flasher information")
+
+    args = parser.parse_args()
+
+    if args.command == "write":
+        dev = RAConnect(vendor_id=0x1a86, product_id=0x7523)
+        print(args)
+        write_img(dev, args.file_name, args.start_address, args.end_address, args.verify)
+    elif args.command == "read":
+        print('read command')
+    elif args.command == "info":
+        print('info command')
+    else:
+        parser.print_help()
+
+if __name__ == "__main__":
+    main()
     
