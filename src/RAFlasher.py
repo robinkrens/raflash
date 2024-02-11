@@ -33,17 +33,17 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
         raise ValueError("end address value error")
     with open(img, 'rb') as f:
         chunk = f.read(chunk_size)
-        #while chunk:
-        #    chunk = f.read(chunk_size)
-        packed = pack_pkt(WRI_CMD, chunk)
-        print(f'Sending {len(chunk)} bytes')
-        dev.send_data(packed)
-        reply_len = 7
-        reply = dev.recv_data(reply_len)
-        reply = b'\x81\x00\x02\x00\x00\xFE\x03'
-        if not reply == False:
-            msg = unpack_pkt(reply)
-            print(msg)
+        while chunk:
+            packed = pack_pkt(WRI_CMD, chunk)
+            print(f'Sending {len(chunk)} bytes')
+            dev.send_data(packed)
+            reply_len = 7
+            reply = dev.recv_data(reply_len)
+            #reply = b'\x81\x00\x02\x00\x00\xFE\x03' # test reply
+            if not reply == False:
+                msg = unpack_pkt(reply)
+                print(msg)
+            chunk = f.read(chunk_size)
 
 
 dev = RAConnect(vendor_id=0x1a86, product_id=0x7523)
