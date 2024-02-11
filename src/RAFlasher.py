@@ -6,6 +6,16 @@ from RAPacker import *
 
 SECTOR_SIZE = 2048
 
+def get_dev_info(dev):
+
+    packed = pack_pkt(SIG_CMD, "")
+    dev.send_data(packed)
+    #info_ret = dev.recv_data(17)
+    info = b'\x81\x00\x0D\x3A\x01\x31\x2d\x00\x00\x1e\x84\x80\x04\x02\x0a\x08' # test
+    fmt = '>IIIBBH'
+    _HEADER, SCI, RMB, NOA, TYP, BFV = struct.unpack(fmt, info)
+    print(f'Ver{BFV >> 8}.{BFV & 0xFF}')
+
 def verify_img(dev, img, start_addr, end_addr):
     raise Exception("Not implemented")
 
@@ -32,6 +42,9 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
         raise ValueError("start address value error")
     if (end_addr <= start_addr or end_addr > 0xFF800):
         raise ValueError("end address value error")
+
+    # @TODO setup initial communication
+
     with open(img, 'rb') as f:
         chunk = f.read(chunk_size)
         while chunk:
@@ -76,7 +89,8 @@ def main():
     elif args.command == "read":
         print('read command')
     elif args.command == "info":
-        print('info command')
+        dev = RAConnect(vendor_id=0x1a86, product_id=0x7523)
+        get_dev_info(dev)
     else:
         parser.print_help()
 
