@@ -99,7 +99,7 @@ def pack_command(cmd, data):
 # format of data packet is [SOD|LNH|LNL|RES|DAT|SUM|ETX]
 def pack_pkt(res, data):
     SOD = 0x81
-    if (len(data) >= 1024):
+    if (len(data) > 1024):
         raise Exception(f'Data packet too large, data length is {DATA_LEN} (>1024)')
     LNH, LNL, SUM = calc_sum(int(res), data)
     if not isinstance(data, bytes):
