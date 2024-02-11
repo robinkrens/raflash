@@ -1,4 +1,4 @@
-from src.Packer import calc_sum, unpack_pkt, pack_pkt
+from src.RAPacker import calc_sum, unpack_pkt, pack_pkt
 import pytest
 
 def test_calc_sum():
