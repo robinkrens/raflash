@@ -16,13 +16,25 @@ def inquire_connection(dev):
     packed = pack_pkt(INQ_CMD, "")
     dev.send_data(packed)
     info = dev.recv_data(7)
-    print(info)
+    #print(info)
     if info == bytearray(b'\x00') or info == bytearray(b''):
         return False
     msg = unpack_pkt(info)
     print("Connection already established")
-    print(msg)
+    #print(msg)
     return True
+
+def get_area_info(dev):
+    for i in [0,1,2]:
+        print("===================")
+        packed = pack_pkt(ARE_CMD, [str(i)])
+        dev.send_data(packed)
+        info = dev.recv_data(23)
+        msg = unpack_pkt(info)
+        fmt = '>BIIII'
+        KOA, SAD, EAD, EAU, WAU = struct.unpack(fmt, bytes(int(x, 16) for x in msg))
+        print(f'Area {KOA} - {hex(SAD)}:{hex(EAD)}')
+        print(f'Erase {hex(EAU)} bytes - write {hex(WAU)} bytes')
 
 def get_dev_info(dev):
 
@@ -38,6 +50,9 @@ def get_dev_info(dev):
     print('====================')
     print(f'Serial interface speed: {SCI} Hz')
     print(f'Recommend max UART baud rate {RMB} bps')
+    print(f'User area in Code flash [{NOA & 0x1}|{NOA & 0x02 >> 1}]')
+    print(f'User area in Data flash [{NOA & 0x03 >> 2}]')
+    print(f'Config area [{NOA & 0x04 >> 3}]')
     if TYP == 0x02:
         print('RA MCU + RA2/RA4 Series')
     elif TYP == 0x03:
@@ -132,6 +147,7 @@ def main():
             #dev.establish_connection()
             dev.confirm_connection()
         get_dev_info(dev)
+        get_area_info(dev)
     else:
         parser.print_help()
 
