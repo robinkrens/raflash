@@ -3,7 +3,7 @@ import time
 import usb.core
 import usb.util
 
-MAX_TRANSFER_SIZE = 64
+MAX_TRANSFER_SIZE = 2048 + 6 # include header and footer
 
 class RAConnect:
     def __init__(self, vendor_id, product_id):
@@ -44,10 +44,10 @@ class RAConnect:
                 if (ep.bmAttributes == 0x02):
                     if ep.bEndpointAddress == self.ep_in:
                         self.rx_ep = ep
-                        print(ep)
+                        #print(ep)
                     elif ep.bEndpointAddress == self.ep_out:
                         self.tx_ep = ep
-                        print(ep)
+                        #print(ep)
             return True
 
         raise ValueError("Device does not have a serial interface")
@@ -101,7 +101,7 @@ class RAConnect:
             while received != exp_len:
                 buf = self.rx_ep.read(exp_len, self.timeout_ms)
                 msg += buf
-                print(buf, len(buf))
+                #print(buf, len(buf))
                 received += len(buf)
                 if received == exp_len:
                     return msg

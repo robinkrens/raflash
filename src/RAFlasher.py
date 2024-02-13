@@ -1,6 +1,8 @@
 import os
 import math
+import time
 import argparse
+from tqdm import tqdm
 from RAConnect import *
 from RAPacker import *
 
@@ -65,6 +67,46 @@ def get_dev_info(dev):
 
 def verify_img(dev, img, start_addr, end_addr):
     raise Exception("Not implemented")
+
+def read_img(dev, img, start_addr, end_addr):
+    
+    # calculate / check start and end address 
+    if start_addr == None or end_addr == None:
+        if start_addr == None:
+            start_addr = 0
+        # align start addr
+        if start_addr % SECTOR_SIZE:
+            raise ValueError(f"start addr not aligned on sector size {SECTOR_SIZE}")
+        blocks = (file_size + SECTOR_SIZE - 1) // SECTOR_SIZE
+        end_addr = blocks * SECTOR_SIZE + start_addr
+        print(end_addr)
+    
+    if (start_addr > 0xFF800): # for RA4 series
+        raise ValueError("start address value error")
+    if (end_addr <= start_addr or end_addr > 0xFF800):
+        raise ValueError("end address value error")
+    
+    # setup initial communication
+    SAD = int_to_hex_list(start_addr)
+    EAD = int_to_hex_list(end_addr)
+    packed = pack_pkt(REA_CMD, SAD + EAD)
+    dev.send_data(packed)
+
+    # calculate how many packets are have to be received
+    nr_packet = (end_addr - start_addr) // 1024 # TODO: set other than just 1024
+    print(f'Sending {nr_packet} packets to MCU')
+
+    with open('output.bin', 'wb') as f:
+        for i in tqdm(range(0, nr_packet+1), desc="Reading progess"):
+            ret = dev.recv_data(1024 + 6)
+            #print(f'Packet nr: {i}')
+            chunk = unpack_pkt(ret)
+            chunky = bytes(int(x, 16) for x in chunk)
+            f.write(chunky)
+            #print(ret)
+            packed = pack_pkt(REA_CMD, ['0x00'], ack=True)
+            dev.send_data(packed)
+
 
 def write_img(dev, img, start_addr, end_addr, verify=False):
 
@@ -148,6 +190,7 @@ def main():
             dev.confirm_connection()
         get_dev_info(dev)
         get_area_info(dev)
+        read_img(dev, "save.bin", 0x0000, 0x3FFFF)
     else:
         parser.print_help()
 
