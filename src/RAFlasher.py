@@ -22,7 +22,19 @@ def get_dev_info(dev):
     #info = b'\x81\x00\x0D\x3A\x01\x31\x2d\x00\x00\x1e\x84\x80\x04\x02\x0a\x08' # test
     fmt = '>IIIBBHH'
     _HEADER, SCI, RMB, NOA, TYP, BFV, _FOOTER = struct.unpack(fmt, info)
-    print(f'Ver{BFV >> 8}.{BFV & 0xFF}')
+    print('Chip info:')
+    print('====================')
+    print(f'Serial interface speed: {SCI} Hz')
+    print(f'Recommend max UART baud rate {RMB} bps')
+    if TYP == 0x02:
+        print('RA MCU + RA2/RA4 Series')
+    elif TYP == 0x03:
+        print('RA MCU + RA6 Series')
+    else:
+        print('Unknown MCU type')
+    print(f'Boot firmware version {BFV >> 8}.{BFV & 0xFF}')
+    print('====================')
+
 
 def verify_img(dev, img, start_addr, end_addr):
     raise Exception("Not implemented")
