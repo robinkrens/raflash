@@ -123,35 +123,43 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
         if start_addr % SECTOR_SIZE:
             raise ValueError(f"start addr not aligned on sector size {SECTOR_SIZE}")
         blocks = (file_size + SECTOR_SIZE - 1) // SECTOR_SIZE
-        end_addr = blocks * SECTOR_SIZE + start_addr
-        print(end_addr)
+        end_addr = blocks * SECTOR_SIZE + start_addr - 1
     
     chunk_size = 64 # max is 1024
-    if (start_addr > 0xFF800): # for RA4 series
-        raise ValueError("start address value error")
-    if (end_addr <= start_addr or end_addr > 0xFF800):
-        raise ValueError("end address value error")
+    #if (start_addr > 0xFF800): # for RA4 series
+    #    raise ValueError("start address value error")
+    #if (end_addr <= start_addr or end_addr > 0xFF800):
+    #    raise ValueError("end address value error")
 
     # setup initial communication
     SAD = int_to_hex_list(start_addr)
     EAD = int_to_hex_list(end_addr)
+    print(SAD, EAD)
+    #packed = pack_pkt(ERA_CMD, SAD + EAD) # actually works
     packed = pack_pkt(WRI_CMD, SAD + EAD)
+    print(packed)
     dev.send_data(packed)
     ret = dev.recv_data(7)
+    unpack_pkt(ret) 
 
     with open(img, 'rb') as f:
         chunk = f.read(chunk_size)
         while chunk:
-            packed = pack_pkt(WRI_CMD, chunk)
+            if len(chunk) != chunk_size:
+                padding_length = chunk_size - len(chunk)
+                chunk += b'\0' * padding_length
+            packed = pack_pkt(WRI_CMD, chunk, ack=True)
             print(f'Sending {len(chunk)} bytes')
             dev.send_data(packed)
             reply_len = 7
             reply = dev.recv_data(reply_len)
             #reply = b'\x81\x00\x02\x00\x00\xFE\x03' # test reply
-            if not reply == False:
-                msg = unpack_pkt(reply)
-                print(msg)
+            #if not reply == False:
+            #print(reply)
+            msg = unpack_pkt(reply)
+            #print(msg)
             chunk = f.read(chunk_size)
+
 
 def main():
     parser = argparse.ArgumentParser(description="RA Flasher Tool")
@@ -191,6 +199,7 @@ def main():
         get_dev_info(dev)
         get_area_info(dev)
         read_img(dev, "save.bin", 0x0000, 0x3FFFF)
+        #write_img(dev, "src/sample.bin", 0x8000, None)
     else:
         parser.print_help()
 
