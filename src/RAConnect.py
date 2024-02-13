@@ -9,7 +9,7 @@ class RAConnect:
     def __init__(self, vendor_id, product_id):
         self.vendor_id = vendor_id
         self.product_id = product_id
-        self.ep_in = 0x82
+        self.ep_in = 0x81
         self.ep_out = 0x02
         self.max_tries = 20
         self.timeout_ms = 100
@@ -24,21 +24,26 @@ class RAConnect:
             raise ValueError(f"Device {self.vendor_id}:{self.product_id} not found\nAre you sure it is connected?")
 
         for config in self.dev:
-            for intf in config:
-                if usb.util.find_descriptor(config, custom_match=lambda d: (d.bInterfaceClass == 0x02 or d.bInterfaceClass == 0xFF)):
-                    print("Found serial device with 0x02 | 0xFF")
-                    if self.dev.is_kernel_driver_active(intf.bInterfaceNumber):
-                        print("Found kernel driver, detaching ... ")
-                        self.dev.detach_kernel_driver(intf.bInterfaceNumber)
-                    for ep in intf:
-                        if (ep.bmAttributes == 0x02):
-                            if ep.bEndpointAddress == self.ep_in:
-                                self.rx_ep = ep
-                                print(ep)
-                            elif ep.bEndpointAddress == self.ep_out:
-                                self.tx_ep = ep
-                                print(ep)
-                    return True
+            #print(config)
+            intf = config[(1,0)]
+            #for intf in config:
+                
+                #if usb.util.find_descriptor(config, custom_match=lambda d: (d.bInterfaceClass == 0xa or d.bInterfaceClass == 0xBB)):
+            print("Found serial device with 0x0a | 0xFF")
+            if self.dev.is_kernel_driver_active(intf.bInterfaceNumber):
+                print("Found kernel driver, detaching ... ")
+                self.dev.detach_kernel_driver(intf.bInterfaceNumber)
+            for ep in intf:
+                #print("=========")
+                #print(ep)
+                if (ep.bmAttributes == 0x02):
+                    if ep.bEndpointAddress == self.ep_in:
+                        self.rx_ep = ep
+                        print(ep)
+                    elif ep.bEndpointAddress == self.ep_out:
+                        self.tx_ep = ep
+                        print(ep)
+            return True
 
         raise ValueError("Device does not have a serial interface")
 
@@ -48,7 +53,7 @@ class RAConnect:
                 self.tx_ep.write(bytes([0x00]), self.timeout_ms)
                 ret = self.rx_ep.read(1, self.timeout_ms)
                 if ret[0] == 0x00:
-                    print("ACK received")
+                    print("Reply ACK received (0x00)")
                     return True
             except usb.core.USBError as e:
                 print(f"Timeout: retry #{i}", e)
@@ -60,7 +65,7 @@ class RAConnect:
                 self.tx_ep.write(bytes([0x55]), self.timeout_ms)
                 ret = self.rx_ep.read(1, self.timeout_ms)
                 if ret[0] == 0xC3:
-                    print("ACK received")
+                    print("Reply received (0xC3)")
                     return True
             except usb.core.USBError as e:
                 print(f"Timeout: retry #{i}", e)
@@ -81,15 +86,23 @@ class RAConnect:
 
     # packets are length 7, except for a read package
     def recv_data(self, exp_len):
+        msg = bytearray(b'')
         if (exp_len > MAX_TRANSFER_SIZE):
             raise ValueError(f"length package {exp_len} over max transfer size")
         if (self.rx_ep == None):
             return False
         try:
-            msg = self.rx_ep.read(exp_len, self.timeout_ms)
+            received = 0
+            while received != exp_len:
+                buf = self.rx_ep.read(exp_len, self.timeout_ms)
+                msg += buf
+                print(buf, len(buf))
+                received += len(buf)
+                if received == exp_len:
+                    return msg
         except usb.core.USBError as e:
             print(f"Timeout: error", e)
-            return False
+            #return False
         return msg
 
 

@@ -16,10 +16,12 @@ def get_dev_info(dev):
 
     packed = pack_pkt(SIG_CMD, "")
     dev.send_data(packed)
-    #info_ret = dev.recv_data(17)
-    info = b'\x81\x00\x0D\x3A\x01\x31\x2d\x00\x00\x1e\x84\x80\x04\x02\x0a\x08' # test
-    fmt = '>IIIBBH'
-    _HEADER, SCI, RMB, NOA, TYP, BFV = struct.unpack(fmt, info)
+    print(packed)
+    info = dev.recv_data(18)
+    print(info, len(info))
+    #info = b'\x81\x00\x0D\x3A\x01\x31\x2d\x00\x00\x1e\x84\x80\x04\x02\x0a\x08' # test
+    fmt = '>IIIBBHH'
+    _HEADER, SCI, RMB, NOA, TYP, BFV, _FOOTER = struct.unpack(fmt, info)
     print(f'Ver{BFV >> 8}.{BFV & 0xFF}')
 
 def verify_img(dev, img, start_addr, end_addr):
@@ -94,13 +96,15 @@ def main():
     args = parser.parse_args()
 
     if args.command == "write":
-        dev = RAConnect(vendor_id=0x1a86, product_id=0x7523)
+        dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
         print(args)
         write_img(dev, args.file_name, args.start_address, args.end_address, args.verify)
     elif args.command == "read":
         print('read command')
     elif args.command == "info":
-        dev = RAConnect(vendor_id=0x1a86, product_id=0x7523)
+        dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
+        dev.establish_connection()
+        dev.confirm_connection()
         get_dev_info(dev)
     else:
         parser.print_help()
