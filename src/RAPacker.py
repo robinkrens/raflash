@@ -97,8 +97,10 @@ def pack_command(cmd, data):
     return fmt
 
 # format of data packet is [SOD|LNH|LNL|RES|DAT|SUM|ETX]
-def pack_pkt(res, data):
+def pack_pkt(res, data, ack=False):
     SOD = 0x01 # TODO: check if 0x81 header needed
+    if ack:
+        SOD = 0x81
     if (len(data) > 1024):
         raise Exception(f'Data packet too large, data length is {DATA_LEN} (>1024)')
     LNH, LNL, SUM = calc_sum(int(res), data)
