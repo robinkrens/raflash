@@ -18,6 +18,11 @@ class RAConnect:
         self.tx_ep = None
         self.find_device()
 
+    def reset(self):
+        if self.dev is None:
+            print(f'Device not connected')
+        self.dev.reset()
+
     def find_device(self):
         self.dev = usb.core.find(idVendor=self.vendor_id, idProduct=self.product_id)
         if self.dev is None:

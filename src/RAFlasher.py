@@ -12,6 +12,18 @@ def int_to_hex_list(num):
     hex_list = [f'0x{hex_string[c:c+2]}' for c in range(0, 8, 2)]
     return hex_list
 
+def inquire_connection(dev):
+    packed = pack_pkt(INQ_CMD, "")
+    dev.send_data(packed)
+    info = dev.recv_data(7)
+    print(info)
+    if info == bytearray(b'\x00') or info == bytearray(b''):
+        return False
+    msg = unpack_pkt(info)
+    print("Connection already established")
+    print(msg)
+    return True
+
 def get_dev_info(dev):
 
     packed = pack_pkt(SIG_CMD, "")
@@ -115,8 +127,10 @@ def main():
         print('read command')
     elif args.command == "info":
         dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
-        dev.establish_connection()
-        dev.confirm_connection()
+        status_con = inquire_connection(dev)
+        if not status_con:
+            #dev.establish_connection()
+            dev.confirm_connection()
         get_dev_info(dev)
     else:
         parser.print_help()
