@@ -17,6 +17,8 @@ class RAConnect:
         self.dev = None
         self.rx_ep = None
         self.tx_ep = None
+        self.chip_layout = []
+        self.sel_area = 0 # default to Area 0
 
         self.find_device()
         status_conn = self.inquire_connection()
@@ -70,6 +72,11 @@ class RAConnect:
 
     def authenticate_connection(self):
         raise Exception("Not implemented")
+
+    def set_chip_layout(self, cfg):
+        if cfg == None:
+            raise ValueError("Could net get chip layout")
+        self.chip_layout = cfg
 
     def send_data(self, packed_data):
         if (self.tx_ep == None):

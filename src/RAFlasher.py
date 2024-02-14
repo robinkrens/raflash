@@ -7,7 +7,6 @@ from tqdm import tqdm
 from RAConnect import *
 from RAPacker import *
 
-SECTOR_SIZE = 2048
 VENDOR_ID = 0x045B
 PRODUCT_ID = 0x0261
 
@@ -24,25 +23,29 @@ def hex_type(string):
     except ValueError:
         raise argparse.ArgumentTypeError(f"'{string}' is not a valid hexadecimal value.")
 
-def set_size_boundaries(start_addr, size):
-    if start_addr % SECTOR_SIZE:
-        raise ValueError(f"start addr not aligned on sector size {SECTOR_SIZE}")
+def set_size_boundaries(dev, start_addr, size):
 
-    if size < SECTOR_SIZE:
+    sector_size = dev.chip_layout[dev.sel_area]['ALIGN'] # currently only area 0 supported
+
+    if start_addr % sector_size:
+        raise ValueError(f"start addr not aligned on sector size {sector_size}")
+
+    if size < sector_size:
         print("Warning: you are trying to write something that is less than one sector size: padding with zeroes")
 
-    blocks = (size + SECTOR_SIZE - 1) // SECTOR_SIZE
-    end_addr = blocks * SECTOR_SIZE + start_addr - 1
+    blocks = (size + sector_size - 1) // sector_size
+    end_addr = blocks * sector_size + start_addr - 1
 
     if (end_addr <= start_addr):
         raise ValueError(f"End address smaller or equal than start_address")
 
-    if (end_addr > 0x3FFFF):
+    if (end_addr > dev.chip_layout[dev.sel_area]['EAD']):
         raise ValueError(f"Binary file is bigger than available ROM space")
 
     return (start_addr, end_addr)
 
-def get_area_info(dev):
+def get_area_info(dev, output=False):
+    cfg = {}
     for i in [0,1,2]:
         packed = pack_pkt(ARE_CMD, [str(i)])
         dev.send_data(packed)
@@ -50,7 +53,11 @@ def get_area_info(dev):
         msg = unpack_pkt(info)
         fmt = '>BIIII'
         KOA, SAD, EAD, EAU, WAU = struct.unpack(fmt, bytes(int(x, 16) for x in msg))
-        print(f'Area {KOA}: {hex(SAD)}:{hex(EAD)} (erase {hex(EAU)} - write {hex(WAU)})')
+        cfg[i] = {"SAD": SAD, "EAD": EAD, "ALIGN": EAU}
+        if output:
+            print(f'Area {KOA}: {hex(SAD)}:{hex(EAD)} (erase {hex(EAU)} - write {hex(WAU)})')
+    
+    return cfg
 
 def get_dev_info(dev):
     packed = pack_pkt(SIG_CMD, "")
@@ -64,7 +71,7 @@ def get_dev_info(dev):
     elif TYP == 0x03:
         print('Chip: RA MCU + RA6 Series')
     else:
-        rint('Unknown MCU type')
+        print('Unknown MCU type')
     print(f'Serial interface speed: {SCI} Hz')
     print(f'Recommend max UART baud rate: {RMB} bps')
     print(f'User area in Code flash [{NOA & 0x1}|{NOA & 0x02 >> 1}]')
@@ -75,9 +82,9 @@ def get_dev_info(dev):
 def erase_chip(dev, start_addr, size):
     
     if size == None:
-        size = 0x3FFFF - start_addr # erase all
+        size = dev.chip_layout[dev.sel_area]['EAD'] - start_addr # erase all
     
-    (start_addr, end_addr) = set_size_boundaries(start_addr, size)
+    (start_addr, end_addr) = set_size_boundaries(dev, start_addr, size)
     print(f'Erasing {hex(start_addr)}:{hex(end_addr)}')
 
     # setup initial communication
@@ -95,7 +102,7 @@ def read_img(dev, img, start_addr, size):
     if size == None:
         size = 0x3FFFF - start_addr # read maximum possible
     
-    (start_addr, end_addr) = set_size_boundaries(start_addr, size)
+    (start_addr, end_addr) = set_size_boundaries(dev, start_addr, size)
 
     # setup initial communication
     SAD = int_to_hex_list(start_addr)
@@ -129,7 +136,7 @@ def write_img(dev, img, start_addr, size, verify=False):
     if size > file_size:
         raise ValueError("Write size > file size")
 
-    (start_addr, end_addr) = set_size_boundaries(start_addr, size)
+    (start_addr, end_addr) = set_size_boundaries(dev, start_addr, size)
     
     chunk_size = 1024 # max is 1024 according to protocol
 
@@ -199,17 +206,24 @@ def main():
 
     if args.command == "write":
         dev = RAConnect(VENDOR_ID, PRODUCT_ID)
+        area_cfg = get_area_info(dev)
+        dev.set_chip_layout(area_cfg)
         write_img(dev, args.file_name, args.start_address, args.size, args.verify)
     elif args.command == "read":
         dev = RAConnect(VENDOR_ID, PRODUCT_ID)
+        area_cfg = get_area_info(dev)
+        dev.set_chip_layout(area_cfg)
         read_img(dev, args.file_name, args.start_address, args.size)
     elif args.command == "erase":
         dev = RAConnect(VENDOR_ID, PRODUCT_ID)
+        area_cfg = get_area_info(dev)
+        dev.set_chip_layout(area_cfg)
         erase_chip(dev, args.start_address, args.size)
     elif args.command == "info":
         dev = RAConnect(VENDOR_ID, PRODUCT_ID)
         get_dev_info(dev)
-        get_area_info(dev)
+        area_cfg = get_area_info(dev, output=True)
+        dev.set_chip_layout(area_cfg)
     else:
         parser.print_help()
 
