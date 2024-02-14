@@ -2,6 +2,7 @@ import os
 import math
 import time
 import argparse
+import tempfile
 from tqdm import tqdm
 from RAConnect import *
 from RAPacker import *
@@ -84,7 +85,7 @@ def read_img(dev, img, start_addr, end_addr):
     # calculate how many packets are have to be received
     nr_packet = (end_addr - start_addr) // 1024 # TODO: set other than just 1024
 
-    with open('output.bin', 'wb') as f:
+    with open(img, 'wb') as f:
         for i in tqdm(range(0, nr_packet+1), desc="Reading progess"):
             ret = dev.recv_data(1024 + 6)
             chunk = unpack_pkt(ret)
@@ -127,7 +128,7 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
     unpack_pkt(ret) 
 
     with open(img, 'rb') as f:
-        with tqdm(total=file_size, desc="Sending chunks") as pbar:
+        with tqdm(total=file_size, desc="Writing progress") as pbar:
             chunk = f.read(chunk_size)
             pbar.update(len(chunk))
             while chunk:
@@ -142,6 +143,16 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
                 chunk = f.read(chunk_size)
                 pbar.update(len(chunk))
 
+    
+    if verify:
+        with tempfile.NamedTemporaryFile(prefix='.hidden_', delete=False) as tmp_file, open(img, 'rb') as cmp_file:
+            read_img(dev, tmp_file.name, start_addr, end_addr)
+            c1 = tmp_file.read(file_size) # due to byte alignment read file is longer
+            c2 = cmp_file.read()
+            if c1 == c2:
+                print("Verify complete")
+            else: 
+                print("Verify failed")
 
 def main():
     parser = argparse.ArgumentParser(description="RA Flasher Tool")
@@ -171,7 +182,7 @@ def main():
         status_con = inquire_connection(dev)
         if not status_con:
             dev.confirm_connection()
-        write_img(dev, "src/sample.bin", 0x8000, None)
+        write_img(dev, "src/sample.bin", 0x8000, None, True)
     elif args.command == "read":
         dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
         status_con = inquire_connection(dev)
