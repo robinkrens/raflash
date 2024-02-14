@@ -80,27 +80,32 @@ def get_dev_info(dev):
     print(f'Config area [{NOA & 0x04 >> 3}]')
     print(f'Boot firmware: version {BFV >> 8}.{BFV & 0xFF}')
 
+def erase_chip(dev, start_addr, size):
+    
+    if size == None:
+        size = 0x3FFFF - start_addr # erase all
+    
+    (start_addr, end_addr) = set_size_boundaries(start_addr, size)
+    print(f'Erasing {hex(start_addr)}:{hex(end_addr)}')
 
-def verify_img(dev, img, start_addr, end_addr):
-    raise Exception("Not implemented")
+    # setup initial communication
+    SAD = int_to_hex_list(start_addr)
+    EAD = int_to_hex_list(end_addr)
+    packed = pack_pkt(ERA_CMD, SAD + EAD)
+    dev.send_data(packed)
+    
+    ret = dev.recv_data(7, timeout=1000) # erase takes usually a bit longer
+    unpack_pkt(ret) 
+    print("Erase complete")
 
-def read_img(dev, img, start_addr, end_addr):
+def read_img(dev, img, start_addr, size):
     
-    # calculate / check start and end address 
-    if start_addr == None or end_addr == None:
-        if start_addr == None:
-            start_addr = 0
-        # align start addr
-        if start_addr % SECTOR_SIZE:
-            raise ValueError(f"start addr not aligned on sector size {SECTOR_SIZE}")
-        blocks = (file_size + SECTOR_SIZE - 1) // SECTOR_SIZE
-        end_addr = blocks * SECTOR_SIZE + start_addr
+    if size == None:
+        size = 0x3FFFF - start_addr # read maximum possible
     
-    if (start_addr > 0xFF800): # for RA4 series
-        raise ValueError("start address value error")
-    if (end_addr <= start_addr or end_addr > 0xFF800):
-        raise ValueError("end address value error")
-    
+    (start_addr, end_addr) = set_size_boundaries(start_addr, size)
+    print(hex(start_addr), hex(end_addr))
+
     # setup initial communication
     SAD = int_to_hex_list(start_addr)
     EAD = int_to_hex_list(end_addr)
@@ -165,7 +170,7 @@ def write_img(dev, img, start_addr, size, verify=False):
     
     if verify:
         with tempfile.NamedTemporaryFile(prefix='.hidden_', delete=False) as tmp_file, open(img, 'rb') as cmp_file:
-            read_img(dev, tmp_file.name, start_addr, end_addr)
+            read_img(dev, tmp_file.name, start_addr, size)
             c1 = tmp_file.read(file_size) # due to byte alignment read file is longer
             c2 = cmp_file.read()
             if c1 == c2:
@@ -191,6 +196,10 @@ def main():
     read_parser.add_argument("--size", type=hex_type, default=None, help="Size in bytes")
     read_parser.add_argument("file_name", type=str, help="File name")
 
+    erase_parser = subparsers.add_parser("erase", help="Erase sectors")
+    erase_parser.add_argument("--start_address", default='0x0000', type=hex_type, help="Start address")
+    erase_parser.add_argument("--size", type=hex_type, help="Size")
+
     # Subparser for the info command
     subparsers.add_parser("info", help="Show flasher information")
 
@@ -208,7 +217,13 @@ def main():
         status_con = inquire_connection(dev)
         if not status_con:
             dev.confirm_connection()
-        read_img(dev, args.file_name, 0x0000, 0x3FFFF)
+        read_img(dev, args.file_name, args.start_address, args.size)
+    elif args.command == "erase":
+        dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
+        status_con = inquire_connection(dev)
+        if not status_con:
+            dev.confirm_connection()
+        erase_chip(dev, args.start_address, args.size)
     elif args.command == "info":
         dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
         status_con = inquire_connection(dev)

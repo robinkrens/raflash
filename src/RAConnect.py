@@ -76,7 +76,7 @@ class RAConnect:
             return False
         return True
 
-    def recv_data(self, exp_len):
+    def recv_data(self, exp_len, timeout=100):
         msg = bytearray(b'')
         if (exp_len > MAX_TRANSFER_SIZE):
             raise ValueError(f"length package {exp_len} over max transfer size")
@@ -85,7 +85,7 @@ class RAConnect:
         try:
             received = 0
             while received != exp_len:
-                buf = self.rx_ep.read(exp_len, self.timeout_ms)
+                buf = self.rx_ep.read(exp_len, timeout)
                 msg += buf
                 received += len(buf)
                 if received == exp_len:
