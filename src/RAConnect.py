@@ -18,36 +18,23 @@ class RAConnect:
         self.tx_ep = None
         self.find_device()
 
-    def reset(self):
-        if self.dev is None:
-            print(f'Device not connected')
-        self.dev.reset()
-
     def find_device(self):
         self.dev = usb.core.find(idVendor=self.vendor_id, idProduct=self.product_id)
         if self.dev is None:
             raise ValueError(f"Device {self.vendor_id}:{self.product_id} not found\nAre you sure it is connected?")
 
         for config in self.dev:
-            #print(config)
             intf = config[(1,0)]
-            #for intf in config:
-                
-                #if usb.util.find_descriptor(config, custom_match=lambda d: (d.bInterfaceClass == 0xa or d.bInterfaceClass == 0xBB)):
-            print("Found serial device with 0x0a | 0xFF")
+            print(f'Found usb device {self.vendor_id}:{self.product_id}')
             if self.dev.is_kernel_driver_active(intf.bInterfaceNumber):
                 print("Found kernel driver, detaching ... ")
                 self.dev.detach_kernel_driver(intf.bInterfaceNumber)
             for ep in intf:
-                #print("=========")
-                #print(ep)
                 if (ep.bmAttributes == 0x02):
                     if ep.bEndpointAddress == self.ep_in:
                         self.rx_ep = ep
-                        #print(ep)
                     elif ep.bEndpointAddress == self.ep_out:
                         self.tx_ep = ep
-                        #print(ep)
             return True
 
         raise ValueError("Device does not have a serial interface")
@@ -89,7 +76,6 @@ class RAConnect:
             return False
         return True
 
-    # packets are length 7, except for a read package
     def recv_data(self, exp_len):
         msg = bytearray(b'')
         if (exp_len > MAX_TRANSFER_SIZE):
@@ -101,26 +87,9 @@ class RAConnect:
             while received != exp_len:
                 buf = self.rx_ep.read(exp_len, self.timeout_ms)
                 msg += buf
-                #print(buf, len(buf))
                 received += len(buf)
                 if received == exp_len:
                     return msg
         except usb.core.USBError as e:
             print(f"Timeout: error", e)
-            #return False
         return msg
-
-
-#communicator = RAConnect(vendor_id=0x1a86, product_id=0x7523)
-
-#communicator.send_data(b'\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA')
-#communicator.recv_data(7)
-
-#if not communicator.establish_connection():
-#    print("Cannot connect")
-#    sys.exit(0)
-#
-#if not communicator.confirm_connection():
-#    print("Failed to confirm boot code")
-#    sys.exit(0)
-
