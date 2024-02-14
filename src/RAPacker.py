@@ -27,9 +27,6 @@ BAU_CMD = 0x34
 SIG_CMD = 0x3A
 ARE_CMD = 0x3B
 
-# These are combined with send command, for example
-# STATUS_OK | ERA_CMD == 0x12
-# STATUS_ERR | ERA_CMD = 0x92
 STATUS_OK = 0x00
 STATUS_ERR = 0x80
 
@@ -137,9 +134,3 @@ def unpack_pkt(data):
     if (ETX != 0x03):
         raise Exception(f'Packet ETX error')
     return message
-    
-
-#cmd = pack_command(INQ_CMD, "")
-#cmd = pack_command(BAU_CMD, ['0x00','0x1E'])
-#cmd = pack_command(IDA_CMD, TESTID)
-
