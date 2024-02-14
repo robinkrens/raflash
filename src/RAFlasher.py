@@ -18,12 +18,10 @@ def inquire_connection(dev):
     packed = pack_pkt(INQ_CMD, "")
     dev.send_data(packed)
     info = dev.recv_data(7)
-    #print(info)
     if info == bytearray(b'\x00') or info == bytearray(b''):
         return False
     msg = unpack_pkt(info)
-    print("Connection already established")
-    #print(msg)
+    #print("Connection already established")
     return True
 
 def get_area_info(dev):
@@ -42,10 +40,7 @@ def get_dev_info(dev):
 
     packed = pack_pkt(SIG_CMD, "")
     dev.send_data(packed)
-    print(packed)
     info = dev.recv_data(18)
-    print(info, len(info))
-    #info = b'\x81\x00\x0D\x3A\x01\x31\x2d\x00\x00\x1e\x84\x80\x04\x02\x0a\x08' # test
     fmt = '>IIIBBHH'
     _HEADER, SCI, RMB, NOA, TYP, BFV, _FOOTER = struct.unpack(fmt, info)
     print('Chip info:')
@@ -79,7 +74,6 @@ def read_img(dev, img, start_addr, end_addr):
             raise ValueError(f"start addr not aligned on sector size {SECTOR_SIZE}")
         blocks = (file_size + SECTOR_SIZE - 1) // SECTOR_SIZE
         end_addr = blocks * SECTOR_SIZE + start_addr
-        print(end_addr)
     
     if (start_addr > 0xFF800): # for RA4 series
         raise ValueError("start address value error")
@@ -94,16 +88,13 @@ def read_img(dev, img, start_addr, end_addr):
 
     # calculate how many packets are have to be received
     nr_packet = (end_addr - start_addr) // 1024 # TODO: set other than just 1024
-    print(f'Sending {nr_packet} packets to MCU')
 
     with open('output.bin', 'wb') as f:
         for i in tqdm(range(0, nr_packet+1), desc="Reading progess"):
             ret = dev.recv_data(1024 + 6)
-            #print(f'Packet nr: {i}')
             chunk = unpack_pkt(ret)
             chunky = bytes(int(x, 16) for x in chunk)
             f.write(chunky)
-            #print(ret)
             packed = pack_pkt(REA_CMD, ['0x00'], ack=True)
             dev.send_data(packed)
 
@@ -134,10 +125,8 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
     # setup initial communication
     SAD = int_to_hex_list(start_addr)
     EAD = int_to_hex_list(end_addr)
-    print(SAD, EAD)
     #packed = pack_pkt(ERA_CMD, SAD + EAD) # actually works
     packed = pack_pkt(WRI_CMD, SAD + EAD)
-    print(packed)
     dev.send_data(packed)
     ret = dev.recv_data(7)
     unpack_pkt(ret) 
@@ -184,20 +173,23 @@ def main():
 
     if args.command == "write":
         dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
-        print(args)
-        write_img(dev, args.file_name, args.start_address, args.end_address, args.verify)
+        status_con = inquire_connection(dev)
+        if not status_con:
+            dev.confirm_connection()
+        write_img(dev, "src/sample.bin", 0x8000, None)
     elif args.command == "read":
-        print('read command')
+        dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
+        status_con = inquire_connection(dev)
+        if not status_con:
+            dev.confirm_connection()
+        read_img(dev, "save.bin", 0x0000, 0x3FFFF)
     elif args.command == "info":
         dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
         status_con = inquire_connection(dev)
         if not status_con:
-            #dev.establish_connection()
             dev.confirm_connection()
         get_dev_info(dev)
         get_area_info(dev)
-        #read_img(dev, "save.bin", 0x0000, 0x3FFFF)
-        write_img(dev, "src/sample.bin", 0x8000, None)
     else:
         parser.print_help()
 
