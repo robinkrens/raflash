@@ -56,18 +56,6 @@ class RAConnect:
         #print("Connection already established")
         return True
 
-    def establish_connection(self):
-        for i in range(self.max_tries):
-            try:
-                self.tx_ep.write(bytes([0x00]), self.timeout_ms)
-                ret = self.rx_ep.read(1, self.timeout_ms)
-                if ret[0] == 0x00:
-                    print("Reply ACK received (0x00)")
-                    return True
-            except usb.core.USBError as e:
-                print(f"Timeout: retry #{i}", e)
-        return False
-
     def confirm_connection(self):
         for i in range(self.max_tries):
             try:
