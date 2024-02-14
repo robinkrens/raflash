@@ -143,24 +143,20 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
     unpack_pkt(ret) 
 
     with open(img, 'rb') as f:
-        cnt = 0
-        chunk = f.read(chunk_size)
-        while chunk:
-            if len(chunk) != chunk_size:
-                padding_length = chunk_size - len(chunk)
-                chunk += b'\0' * padding_length
-            cnt += 1
-            packed = pack_pkt(WRI_CMD, chunk, ack=True)
-            print(f'Sending {len(chunk)} bytes: {cnt}')
-            dev.send_data(packed)
-            reply_len = 7
-            reply = dev.recv_data(reply_len)
-            #reply = b'\x81\x00\x02\x00\x00\xFE\x03' # test reply
-            #if not reply == False:
-            #print(reply)
-            msg = unpack_pkt(reply)
-            #print(msg)
+        with tqdm(total=file_size, desc="Sending chunks") as pbar:
             chunk = f.read(chunk_size)
+            pbar.update(len(chunk))
+            while chunk:
+                if len(chunk) != chunk_size:
+                    padding_length = chunk_size - len(chunk)
+                    chunk += b'\0' * padding_length
+                packed = pack_pkt(WRI_CMD, chunk, ack=True)
+                dev.send_data(packed)
+                reply_len = 7
+                reply = dev.recv_data(reply_len)
+                msg = unpack_pkt(reply)
+                chunk = f.read(chunk_size)
+                pbar.update(len(chunk))
 
 
 def main():
