@@ -15,10 +15,10 @@ def test_read_unpack():
     assert unpack_pkt(b'\x81\x00\x04\x15\xAA\xBB\xCC\xB6\x03') == ['0xAA', '0xBB', '0xCC']
 
 def test_pack_unpack():
-    assert unpack_pkt(pack_pkt(0x13, ['0x00','0x01','0x02'])) == ['0x00', '0x01', '0x02']
-    assert unpack_pkt(pack_pkt(0x34, ['0x00'])) == ['0x00']
-    assert unpack_pkt(pack_pkt(0x00, ['0x00'])) == ['0x00']
-    assert unpack_pkt(pack_pkt(0x12, ['0x00'])) == ['0x00']
+    assert unpack_pkt(pack_pkt(0x13, ['0x00','0x01','0x02'], ack=True)) == ['0x00', '0x01', '0x02']
+    assert unpack_pkt(pack_pkt(0x34, ['0x00'], ack=True)) == ['0x00']
+    assert unpack_pkt(pack_pkt(0x00, ['0x00'], ack=True)) == ['0x00']
+    assert unpack_pkt(pack_pkt(0x12, ['0x00'], ack=True)) == ['0x00']
 
 def test_err_unpack():
     with pytest.raises(ValueError, match=r".*0xC3.*") as excinfo:
