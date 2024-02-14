@@ -2,6 +2,7 @@ import sys
 import time
 import usb.core
 import usb.util
+from RAPacker import *
 
 MAX_TRANSFER_SIZE = 2048 + 6 # include header and footer
 
@@ -16,7 +17,11 @@ class RAConnect:
         self.dev = None
         self.rx_ep = None
         self.tx_ep = None
+
         self.find_device()
+        status_conn = self.inquire_connection()
+        if not status_conn:
+            self.confirm_connection()
 
     def find_device(self):
         self.dev = usb.core.find(idVendor=self.vendor_id, idProduct=self.product_id)
@@ -38,7 +43,18 @@ class RAConnect:
                         self.tx_ep = ep
             return True
 
-        raise ValueError("Device does not have a serial interface")
+        raise ValueError("Device does not have a CDC interface")
+
+
+    def inquire_connection(self):
+        packed = pack_pkt(INQ_CMD, "")
+        self.send_data(packed)
+        info = self.recv_data(7)
+        if info == bytearray(b'\x00') or info == bytearray(b''):
+            return False
+        msg = unpack_pkt(info)
+        #print("Connection already established")
+        return True
 
     def establish_connection(self):
         for i in range(self.max_tries):

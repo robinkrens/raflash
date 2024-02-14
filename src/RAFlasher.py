@@ -8,6 +8,8 @@ from RAConnect import *
 from RAPacker import *
 
 SECTOR_SIZE = 2048
+VENDOR_ID = 0x045B
+PRODUCT_ID = 0x0261
 
 def int_to_hex_list(num):
     hex_string = hex(num)[2:].upper()  # convert to hex string
@@ -39,16 +41,6 @@ def set_size_boundaries(start_addr, size):
         raise ValueError(f"Binary file is bigger than available ROM space")
 
     return (start_addr, end_addr)
-
-def inquire_connection(dev):
-    packed = pack_pkt(INQ_CMD, "")
-    dev.send_data(packed)
-    info = dev.recv_data(7)
-    if info == bytearray(b'\x00') or info == bytearray(b''):
-        return False
-    msg = unpack_pkt(info)
-    #print("Connection already established")
-    return True
 
 def get_area_info(dev):
     for i in [0,1,2]:
@@ -206,28 +198,16 @@ def main():
     args = parser.parse_args()
 
     if args.command == "write":
-        dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
-        status_con = inquire_connection(dev)
-        if not status_con:
-            dev.confirm_connection()
+        dev = RAConnect(VENDOR_ID, PRODUCT_ID)
         write_img(dev, args.file_name, args.start_address, args.size, args.verify)
     elif args.command == "read":
-        dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
-        status_con = inquire_connection(dev)
-        if not status_con:
-            dev.confirm_connection()
+        dev = RAConnect(VENDOR_ID, PRODUCT_ID)
         read_img(dev, args.file_name, args.start_address, args.size)
     elif args.command == "erase":
-        dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
-        status_con = inquire_connection(dev)
-        if not status_con:
-            dev.confirm_connection()
+        dev = RAConnect(VENDOR_ID, PRODUCT_ID)
         erase_chip(dev, args.start_address, args.size)
     elif args.command == "info":
-        dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
-        status_con = inquire_connection(dev)
-        if not status_con:
-            dev.confirm_connection()
+        dev = RAConnect(VENDOR_ID, PRODUCT_ID)
         get_dev_info(dev)
         get_area_info(dev)
     else:
