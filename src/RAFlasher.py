@@ -10,6 +10,13 @@ from RAPacker import *
 VENDOR_ID = 0x045B
 PRODUCT_ID = 0x0261
 
+commands = {
+    "write": lambda dev, args: write_img(dev, args.file_name, args.start_address, args.size, args.verify),
+    "read": lambda dev, args: read_img(dev, args.file_name, args.start_address, args.size),
+    "erase": lambda dev, args: erase_chip(dev, args.start_address, args.size),
+    "info": lambda dev, args: (get_dev_info(dev), dev.set_chip_layout(get_area_info(dev, output=True)))
+}
+
 def int_to_hex_list(num):
     hex_string = hex(num)[2:].upper()  # convert to hex string
     hex_string = hex_string.zfill(8) # pad for 8 char's long
@@ -182,14 +189,12 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command", title="Commands")
 
-    # Subparser for the write command
     write_parser = subparsers.add_parser("write", help="Write data to flash")
     write_parser.add_argument("--start_address", type=hex_type, default='0x0000', help="Start address")
     write_parser.add_argument("--size", type=hex_type, default=None, help="Size in bytes")
     write_parser.add_argument("--verify", action="store_true", help="Verify after writing")
     write_parser.add_argument("file_name", type=str, help="File name")
 
-    # Subparser for the read command
     read_parser = subparsers.add_parser("read", help="Read data from flash")
     read_parser.add_argument("--start_address", type=hex_type, default='0x0000', help="Start address")
     read_parser.add_argument("--size", type=hex_type, default=None, help="Size in bytes")
@@ -199,34 +204,17 @@ def main():
     erase_parser.add_argument("--start_address", default='0x0000', type=hex_type, help="Start address")
     erase_parser.add_argument("--size", type=hex_type, help="Size")
 
-    # Subparser for the info command
     subparsers.add_parser("info", help="Show flasher information")
 
     args = parser.parse_args()
-
-    if args.command == "write":
+        
+    if args.command in commands:
         dev = RAConnect(VENDOR_ID, PRODUCT_ID)
         area_cfg = get_area_info(dev)
         dev.set_chip_layout(area_cfg)
-        write_img(dev, args.file_name, args.start_address, args.size, args.verify)
-    elif args.command == "read":
-        dev = RAConnect(VENDOR_ID, PRODUCT_ID)
-        area_cfg = get_area_info(dev)
-        dev.set_chip_layout(area_cfg)
-        read_img(dev, args.file_name, args.start_address, args.size)
-    elif args.command == "erase":
-        dev = RAConnect(VENDOR_ID, PRODUCT_ID)
-        area_cfg = get_area_info(dev)
-        dev.set_chip_layout(area_cfg)
-        erase_chip(dev, args.start_address, args.size)
-    elif args.command == "info":
-        dev = RAConnect(VENDOR_ID, PRODUCT_ID)
-        get_dev_info(dev)
-        area_cfg = get_area_info(dev, output=True)
-        dev.set_chip_layout(area_cfg)
+        commands[args.command](dev, args)
     else:
         parser.print_help()
 
 if __name__ == "__main__":
     main()
-    
