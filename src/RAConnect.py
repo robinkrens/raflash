@@ -25,7 +25,8 @@ class RAConnect:
 
         for config in self.dev:
             intf = config[(1,0)]
-            print(f'Found usb device {self.vendor_id}:{self.product_id}')
+            product_name = usb.util.get_string(self.dev, self.dev.iProduct)
+            print(f'Found {product_name} ({self.vendor_id}:{self.product_id})')
             if self.dev.is_kernel_driver_active(intf.bInterfaceNumber):
                 print("Found kernel driver, detaching ... ")
                 self.dev.detach_kernel_driver(intf.bInterfaceNumber)

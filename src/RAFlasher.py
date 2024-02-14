@@ -104,7 +104,6 @@ def read_img(dev, img, start_addr, size):
         size = 0x3FFFF - start_addr # read maximum possible
     
     (start_addr, end_addr) = set_size_boundaries(start_addr, size)
-    print(hex(start_addr), hex(end_addr))
 
     # setup initial communication
     SAD = int_to_hex_list(start_addr)
@@ -139,7 +138,6 @@ def write_img(dev, img, start_addr, size, verify=False):
         raise ValueError("Write size > file size")
 
     (start_addr, end_addr) = set_size_boundaries(start_addr, size)
-    print(start_addr, end_addr)
     
     chunk_size = 1024 # max is 1024 according to protocol
 
@@ -151,11 +149,12 @@ def write_img(dev, img, start_addr, size, verify=False):
     ret = dev.recv_data(7)
     unpack_pkt(ret) 
 
+    totalread = 0
     with open(img, 'rb') as f:
-        with tqdm(total=file_size, desc="Writing progress") as pbar:
+        with tqdm(total=size, desc="Writing progress") as pbar:
             chunk = f.read(chunk_size)
             pbar.update(len(chunk))
-            while chunk:
+            while chunk and totalread < size:
                 if len(chunk) != chunk_size:
                     padding_length = chunk_size - len(chunk)
                     chunk += b'\0' * padding_length
@@ -165,6 +164,7 @@ def write_img(dev, img, start_addr, size, verify=False):
                 reply = dev.recv_data(reply_len)
                 msg = unpack_pkt(reply)
                 chunk = f.read(chunk_size)
+                totalread += chunk_size
                 pbar.update(len(chunk))
 
     
@@ -210,7 +210,6 @@ def main():
         status_con = inquire_connection(dev)
         if not status_con:
             dev.confirm_connection()
-        #print(args.start_address, args.size)
         write_img(dev, args.file_name, args.start_address, args.size, args.verify)
     elif args.command == "read":
         dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
