@@ -125,7 +125,7 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
         blocks = (file_size + SECTOR_SIZE - 1) // SECTOR_SIZE
         end_addr = blocks * SECTOR_SIZE + start_addr - 1
     
-    chunk_size = 64 # max is 1024
+    chunk_size = 1024 # max is 1024
     #if (start_addr > 0xFF800): # for RA4 series
     #    raise ValueError("start address value error")
     #if (end_addr <= start_addr or end_addr > 0xFF800):
@@ -143,13 +143,15 @@ def write_img(dev, img, start_addr, end_addr, verify=False):
     unpack_pkt(ret) 
 
     with open(img, 'rb') as f:
+        cnt = 0
         chunk = f.read(chunk_size)
         while chunk:
             if len(chunk) != chunk_size:
                 padding_length = chunk_size - len(chunk)
                 chunk += b'\0' * padding_length
+            cnt += 1
             packed = pack_pkt(WRI_CMD, chunk, ack=True)
-            print(f'Sending {len(chunk)} bytes')
+            print(f'Sending {len(chunk)} bytes: {cnt}')
             dev.send_data(packed)
             reply_len = 7
             reply = dev.recv_data(reply_len)
@@ -198,8 +200,8 @@ def main():
             dev.confirm_connection()
         get_dev_info(dev)
         get_area_info(dev)
-        read_img(dev, "save.bin", 0x0000, 0x3FFFF)
-        #write_img(dev, "src/sample.bin", 0x8000, None)
+        #read_img(dev, "save.bin", 0x0000, 0x3FFFF)
+        write_img(dev, "src/sample.bin", 0x8000, None)
     else:
         parser.print_help()
 
