@@ -15,6 +15,31 @@ def int_to_hex_list(num):
     hex_list = [f'0x{hex_string[c:c+2]}' for c in range(0, 8, 2)]
     return hex_list
 
+def hex_type(string):
+    try:
+        value = int(string, 16)
+        return value
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{string}' is not a valid hexadecimal value.")
+
+def set_size_boundaries(start_addr, size):
+    if start_addr % SECTOR_SIZE:
+        raise ValueError(f"start addr not aligned on sector size {SECTOR_SIZE}")
+
+    if size < SECTOR_SIZE:
+        print("Warning: you are trying to write something that is less than one sector size: padding with zeroes")
+
+    blocks = (size + SECTOR_SIZE - 1) // SECTOR_SIZE
+    end_addr = blocks * SECTOR_SIZE + start_addr - 1
+
+    if (end_addr <= start_addr):
+        raise ValueError(f"End address smaller or equal than start_address")
+
+    if (end_addr > 0x3FFFF):
+        raise ValueError(f"Binary file is bigger than available ROM space")
+
+    return (start_addr, end_addr)
+
 def inquire_connection(dev):
     packed = pack_pkt(INQ_CMD, "")
     dev.send_data(packed)
@@ -47,7 +72,7 @@ def get_dev_info(dev):
     elif TYP == 0x03:
         print('Chip: RA MCU + RA6 Series')
     else:
-        print('Unknown MCU type')
+        rint('Unknown MCU type')
     print(f'Serial interface speed: {SCI} Hz')
     print(f'Recommend max UART baud rate: {RMB} bps')
     print(f'User area in Code flash [{NOA & 0x1}|{NOA & 0x02 >> 1}]')
@@ -86,7 +111,7 @@ def read_img(dev, img, start_addr, end_addr):
     nr_packet = (end_addr - start_addr) // 1024 # TODO: set other than just 1024
 
     with open(img, 'wb') as f:
-        for i in tqdm(range(0, nr_packet+1), desc="Reading progess"):
+        for i in tqdm(range(0, nr_packet+1), desc="Reading progress"):
             ret = dev.recv_data(1024 + 6)
             chunk = unpack_pkt(ret)
             chunky = bytes(int(x, 16) for x in chunk)
@@ -95,33 +120,27 @@ def read_img(dev, img, start_addr, end_addr):
             dev.send_data(packed)
 
 
-def write_img(dev, img, start_addr, end_addr, verify=False):
+def write_img(dev, img, start_addr, size, verify=False):
 
     if os.path.exists(img):
         file_size = os.path.getsize(img)
     else:
         raise Exception(f'file {img} does not exist')
 
-    # calculate / check start and end address 
-    if start_addr == None or end_addr == None:
-        if start_addr == None:
-            start_addr = 0
-        # align start addr
-        if start_addr % SECTOR_SIZE:
-            raise ValueError(f"start addr not aligned on sector size {SECTOR_SIZE}")
-        blocks = (file_size + SECTOR_SIZE - 1) // SECTOR_SIZE
-        end_addr = blocks * SECTOR_SIZE + start_addr - 1
+    if size == None:
+        size = file_size
+
+    if size > file_size:
+        raise ValueError("Write size > file size")
+
+    (start_addr, end_addr) = set_size_boundaries(start_addr, size)
+    print(start_addr, end_addr)
     
-    chunk_size = 1024 # max is 1024
-    #if (start_addr > 0xFF800): # for RA4 series
-    #    raise ValueError("start address value error")
-    #if (end_addr <= start_addr or end_addr > 0xFF800):
-    #    raise ValueError("end address value error")
+    chunk_size = 1024 # max is 1024 according to protocol
 
     # setup initial communication
     SAD = int_to_hex_list(start_addr)
     EAD = int_to_hex_list(end_addr)
-    #packed = pack_pkt(ERA_CMD, SAD + EAD) # actually works
     packed = pack_pkt(WRI_CMD, SAD + EAD)
     dev.send_data(packed)
     ret = dev.recv_data(7)
@@ -161,15 +180,15 @@ def main():
 
     # Subparser for the write command
     write_parser = subparsers.add_parser("write", help="Write data to flash")
-    write_parser.add_argument("--start_address", type=int, default=0x0000, help="Start address")
-    write_parser.add_argument("--end_address", type=int, help="End address")
+    write_parser.add_argument("--start_address", type=hex_type, default='0x0000', help="Start address")
+    write_parser.add_argument("--size", type=hex_type, default=None, help="Size in bytes")
     write_parser.add_argument("--verify", action="store_true", help="Verify after writing")
     write_parser.add_argument("file_name", type=str, help="File name")
 
     # Subparser for the read command
     read_parser = subparsers.add_parser("read", help="Read data from flash")
-    read_parser.add_argument("--start_address", type=int, default=0x000, help="Start address")
-    read_parser.add_argument("--size", type=int, default=1024, help="Size in bytes")
+    read_parser.add_argument("--start_address", type=hex_type, default='0x0000', help="Start address")
+    read_parser.add_argument("--size", type=hex_type, default=None, help="Size in bytes")
     read_parser.add_argument("file_name", type=str, help="File name")
 
     # Subparser for the info command
@@ -182,13 +201,14 @@ def main():
         status_con = inquire_connection(dev)
         if not status_con:
             dev.confirm_connection()
-        write_img(dev, "src/sample.bin", 0x8000, None, True)
+        #print(args.start_address, args.size)
+        write_img(dev, args.file_name, args.start_address, args.size, args.verify)
     elif args.command == "read":
         dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
         status_con = inquire_connection(dev)
         if not status_con:
             dev.confirm_connection()
-        read_img(dev, "save.bin", 0x0000, 0x3FFFF)
+        read_img(dev, args.file_name, 0x0000, 0x3FFFF)
     elif args.command == "info":
         dev = RAConnect(vendor_id=0x045B, product_id=0x0261)
         status_con = inquire_connection(dev)
