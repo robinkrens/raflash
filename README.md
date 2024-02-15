@@ -12,6 +12,19 @@ Flash tool for the built in ROM bootloader for Renesas RA microcontrollers
 - pip install -r requirements.txt
 - pip install -e .
 
+## Access rights to USB device
+
+Add a file `/etc/udev/rules.d/40-renesas.rules` and add the following:
+```
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="045b", ATTRS{idProduct}=="0261", GROUP="plugdev", MODE="0666"
+```
+Make sure you retrigger udev again:
+
+```
+sudo udevadm trigger
+```
+Make sure you are also in the group *plugdev* 
+
 ## Usage
 ```
 usage: raflash [-h] {write,read,erase,info} ...
