@@ -1,5 +1,5 @@
-# Renesas RA flasher
-Flasher for the built in ROM bootloader for Renesas RA microcontrollers
+# Renesas RA flash tool
+Flash tool for the built in ROM bootloader for Renesas RA microcontrollers
 
 ## Requirements
 - Python >= 3.6
@@ -48,25 +48,25 @@ options:
 ```
 
 ## Dev
-[X] Pull requests
-[X] Issues
+ - [X] Pull requests
+- [X] Issues
 
 ## Supported functionality
-[X] Read
-[X] Write
-[X] Erase / sector erase
-[X] Info / area information
-[] ID Authentication
-[] Baud rate (only for SCI)
+- [X] Read
+- [X] Write
+- [X] Erase / sector erase
+- [X] Info / area information
+- [ ] ID Authentication
+- [ ] Baud rate (only for SCI)
 
 ## Supported interfaces
-[X] USB
-[] SCI
+- [X] USB
+- [ ] SCI
 
 ## Supported MCUs
-[X] RA4 (tested)
-[] RA2 (should potentially work)
-[] RA6 
+- [X] RA4 (tested)
+- [ ] RA2 (should potentially work)
+- [ ] RA6 
 
 *Note: only tested on RA4 hardware*
 
