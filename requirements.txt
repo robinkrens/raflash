@@ -7,6 +7,5 @@ pluggy==1.4.0
 pytest==8.0.0
 pyusb==1.2.1
 PyYAML==6.0.1
-renesas-ra-flasher==0.0.1
 tomli==2.0.1
 tqdm==4.66.2
