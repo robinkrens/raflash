@@ -9,9 +9,9 @@ setup(
     name="raflash",
     version="0.0.1",
     author="Robin Krens",
-    description=("Flasher for the built in ROM bootloader for Renesas RA microcontrollers"),
+    description=("Flash tool for ROM bootloader for Renesas RA MCUs"),
     license="GNU",
-    keywords="Renesas RA chipset flasher",
+    keywords="Renesas RA flash bootloader",
     packages=['raflash', 'tests'],
     install_requires=[
         'exceptiongroup>=1.2.0',
@@ -31,8 +31,9 @@ setup(
             'raflash = raflash.RAFlasher:main',
         ],
     },
+    long_description_content_type='text/markdown',
     long_description=read('README.md'),
     classifiers=[
-        "Development Status :: 1",
+        'Development Status :: 3 - Alpha',
     ],
 )
