@@ -21,8 +21,8 @@ import time
 import argparse
 import tempfile
 from tqdm import tqdm
-from RAConnect import *
-from RAPacker import *
+from src.RAConnect import *
+from src.RAPacker import *
 
 VENDOR_ID = 0x045B
 PRODUCT_ID = 0x0261

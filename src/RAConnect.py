@@ -19,7 +19,7 @@ import sys
 import time
 import usb.core
 import usb.util
-from RAPacker import *
+from src.RAPacker import *
 
 MAX_TRANSFER_SIZE = 2048 + 6 # include header and footer
 
