@@ -17,7 +17,7 @@ WIP: currently in development mode
 
 ## Usage
 ```
-usage: RAFlasher.py [-h] {write,read,erase,info} ...
+usage: raflash [-h] {write,read,erase,info} ...
 
 RA Flasher Tool
 
@@ -33,7 +33,7 @@ Commands:
 ```
 Each command has various options. For example, use RAFlasher write -h to see all write options:
 ```
-usage: RAFlasher.py write [-h] [--start_address START_ADDRESS] [--size SIZE] [--verify] file_name
+usage: raflash write [-h] [--start_address START_ADDRESS] [--size SIZE] [--verify] file_name
 
 positional arguments:
   file_name             File name
