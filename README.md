@@ -5,15 +5,12 @@ Flash tool for the built in ROM bootloader for Renesas RA microcontrollers
 - Python >= 3.6
 - venv
 
-## Local install
+## Local and development install
 *Strongly Recommended to use venv (https://docs.python.org/3/library/venv.html)*
 - python -m venv .venv
 - source .venv/bin/activate
 - pip install -r requirements.txt
 - pip install -e .
-
-## Package
-WIP: currently in development mode
 
 ## Usage
 ```
