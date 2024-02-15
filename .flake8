@@ -1,0 +1,10 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E203, W503
+exclude = .git,__pycache__,.venv
+ignore = E261, E302, E305, E501, W291, W293, W503, W504, F401, F403, F841
+inline-quotes = '
+select = C,E,F,W,B,B950
+per-file-ignores =
+    # Example per-file ignores
+    # __init__.py: F401

@@ -64,12 +64,12 @@ def calc_sum(cmd, data):
     lnl = data_len + 1 & 0x00FF
     res = lnh + lnl + cmd
     for i in range(data_len):
-            if isinstance(data[i], str):
-                res += int(data[i], 16)
-            elif isinstance(data[i], int):
-                res += data[i]
-            else:
-                res += ord(data[i])
+        if isinstance(data[i], str):
+            res += int(data[i], 16)
+        elif isinstance(data[i], int):
+            res += data[i]
+        else:
+            res += ord(data[i])
     res = ~(res - 1) & 0xFF # two's complement
     return (lnh, lnl, res)
 
@@ -99,7 +99,7 @@ def pack_pkt(res, data, ack=False):
     if ack:
         SOD = 0x81
     if (len(data) > 1024):
-        raise Exception(f'Data packet too large, data length is {DATA_LEN} (>1024)')
+        raise Exception(f'Data packet too large, data length is {len(data)} (>1024)')
     LNH, LNL, SUM = calc_sum(int(res), data)
     if not isinstance(data, bytes):
         DAT = bytes([int(x, 16) for x in data])
@@ -119,7 +119,7 @@ def unpack_pkt(data):
     fmt_header = '<BBBB'
     SOD, LNH, LNL, RES = struct.unpack(fmt_header, header)
     if (SOD != 0x81):
-        raise Exception(f'Wrong start of packet data received')
+        raise Exception('Wrong start of packet data received')
     pkt_len = (LNH << 0x8 | LNL) - 1
     fmt_message = '<' + str(pkt_len) + 's'
     raw = struct.unpack_from(fmt_message, data, 4)[0]
@@ -132,5 +132,5 @@ def unpack_pkt(data):
     if (SUM != local_sum):
         raise Exception(f'Sum calculation mismatch, read {SUM} instead of {local_sum}')
     if (ETX != 0x03):
-        raise Exception(f'Packet ETX error')
+        raise Exception('Packet ETX error')
     return message

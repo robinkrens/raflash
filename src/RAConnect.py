@@ -23,6 +23,7 @@ from src.RAPacker import *
 
 MAX_TRANSFER_SIZE = 2048 + 6 # include header and footer
 
+
 class RAConnect:
     def __init__(self, vendor_id, product_id):
         self.vendor_id = vendor_id
@@ -48,7 +49,7 @@ class RAConnect:
             raise ValueError(f"Device {self.vendor_id}:{self.product_id} not found\nAre you sure it is connected?")
 
         for config in self.dev:
-            intf = config[(1,0)]
+            intf = config[(1, 0)]
             product_name = usb.util.get_string(self.dev, self.dev.iProduct)
             print(f'Found {product_name} ({self.vendor_id}:{self.product_id})')
             if self.dev.is_kernel_driver_active(intf.bInterfaceNumber):
@@ -64,7 +65,6 @@ class RAConnect:
 
         raise ValueError("Device does not have a CDC interface")
 
-
     def inquire_connection(self):
         packed = pack_pkt(INQ_CMD, "")
         self.send_data(packed)
@@ -72,7 +72,7 @@ class RAConnect:
         if info == bytearray(b'\x00') or info == bytearray(b''):
             return False
         msg = unpack_pkt(info)
-        #print("Connection already established")
+        # print("Connection already established")
         return True
 
     def confirm_connection(self):
@@ -91,25 +91,25 @@ class RAConnect:
         raise Exception("Not implemented")
 
     def set_chip_layout(self, cfg):
-        if cfg == None:
+        if cfg is None:
             raise ValueError("Could net get chip layout")
         self.chip_layout = cfg
 
     def send_data(self, packed_data):
-        if (self.tx_ep == None):
+        if self.tx_ep is None:
             return False
         try:
             self.tx_ep.write(packed_data, self.timeout_ms)
         except usb.core.USBError as e:
-            print(f"Timeout: error", e)
+            print("Timeout: error", e)
             return False
         return True
 
     def recv_data(self, exp_len, timeout=100):
         msg = bytearray(b'')
-        if (exp_len > MAX_TRANSFER_SIZE):
+        if exp_len > MAX_TRANSFER_SIZE:
             raise ValueError(f"length package {exp_len} over max transfer size")
-        if (self.rx_ep == None):
+        if self.rx_ep is None:
             return False
         try:
             received = 0
@@ -120,5 +120,5 @@ class RAConnect:
                 if received == exp_len:
                     return msg
         except usb.core.USBError as e:
-            print(f"Timeout: error", e)
+            print("Timeout: error", e)
         return msg

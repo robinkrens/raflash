@@ -35,7 +35,7 @@ commands = {
 }
 
 def int_to_hex_list(num):
-    hex_string = hex(num)[2:].upper()  # convert to hex string
+    hex_string = hex(num)[2:].upper() # convert to hex string
     hex_string = hex_string.zfill(8) # pad for 8 char's long
     hex_list = [f'0x{hex_string[c:c+2]}' for c in range(0, 8, 2)]
     return hex_list
@@ -49,7 +49,7 @@ def hex_type(string):
 
 def set_size_boundaries(dev, start_addr, size):
 
-    sector_size = dev.chip_layout[dev.sel_area]['ALIGN'] # currently only area 0 supported
+    sector_size = dev.chip_layout[dev.sel_area]['ALIGN']  # currently only area 0 supported
 
     if start_addr % sector_size:
         raise ValueError(f"start addr not aligned on sector size {sector_size}")
@@ -61,16 +61,16 @@ def set_size_boundaries(dev, start_addr, size):
     end_addr = blocks * sector_size + start_addr - 1
 
     if (end_addr <= start_addr):
-        raise ValueError(f"End address smaller or equal than start_address")
+        raise ValueError("End address smaller or equal than start_address")
 
     if (end_addr > dev.chip_layout[dev.sel_area]['EAD']):
-        raise ValueError(f"Binary file is bigger than available ROM space")
+        raise ValueError("Binary file is bigger than available ROM space")
 
     return (start_addr, end_addr)
 
 def get_area_info(dev, output=False):
     cfg = {}
-    for i in [0,1,2]:
+    for i in [0, 1, 2]:
         packed = pack_pkt(ARE_CMD, [str(i)])
         dev.send_data(packed)
         info = dev.recv_data(23)
@@ -79,8 +79,7 @@ def get_area_info(dev, output=False):
         KOA, SAD, EAD, EAU, WAU = struct.unpack(fmt, bytes(int(x, 16) for x in msg))
         cfg[i] = {"SAD": SAD, "EAD": EAD, "ALIGN": EAU}
         if output:
-            print(f'Area {KOA}: {hex(SAD)}:{hex(EAD)} (erase {hex(EAU)} - write {hex(WAU)})')
-    
+            print(f'Area {KOA}: {hex(SAD)}:{hex(EAD)} (erase {hex(EAU)} - write {hex(WAU)})') 
     return cfg
 
 def get_dev_info(dev):
@@ -104,9 +103,8 @@ def get_dev_info(dev):
     print(f'Boot firmware: version {BFV >> 8}.{BFV & 0xFF}')
 
 def erase_chip(dev, start_addr, size):
-    
-    if size == None:
-        size = dev.chip_layout[dev.sel_area]['EAD'] - start_addr # erase all
+    if size is None:
+        size = dev.chip_layout[dev.sel_area]['EAD'] - start_addr  # erase all
     
     (start_addr, end_addr) = set_size_boundaries(dev, start_addr, size)
     print(f'Erasing {hex(start_addr)}:{hex(end_addr)}')
@@ -117,14 +115,14 @@ def erase_chip(dev, start_addr, size):
     packed = pack_pkt(ERA_CMD, SAD + EAD)
     dev.send_data(packed)
     
-    ret = dev.recv_data(7, timeout=1000) # erase takes usually a bit longer
+    ret = dev.recv_data(7, timeout=1000)  # erase takes usually a bit longer
     unpack_pkt(ret) 
     print("Erase complete")
 
 def read_img(dev, img, start_addr, size):
     
-    if size == None:
-        size = 0x3FFFF - start_addr # read maximum possible
+    if size is None:
+        size = 0x3FFFF - start_addr  # read maximum possible
     
     (start_addr, end_addr) = set_size_boundaries(dev, start_addr, size)
 
@@ -135,10 +133,10 @@ def read_img(dev, img, start_addr, size):
     dev.send_data(packed)
 
     # calculate how many packets are have to be received
-    nr_packet = (end_addr - start_addr) // 1024 # TODO: set other than just 1024
+    nr_packet = (end_addr - start_addr) // 1024  # TODO: set other than just 1024
 
     with open(img, 'wb') as f:
-        for i in tqdm(range(0, nr_packet+1), desc="Reading progress"):
+        for i in tqdm(range(0, nr_packet + 1), desc="Reading progress"):
             ret = dev.recv_data(1024 + 6)
             chunk = unpack_pkt(ret)
             chunky = bytes(int(x, 16) for x in chunk)
@@ -154,15 +152,15 @@ def write_img(dev, img, start_addr, size, verify=False):
     else:
         raise Exception(f'file {img} does not exist')
 
-    if size == None:
+    if size is None:
         size = file_size
 
     if size > file_size:
         raise ValueError("Write size > file size")
 
     (start_addr, end_addr) = set_size_boundaries(dev, start_addr, size)
-    
-    chunk_size = 1024 # max is 1024 according to protocol
+
+    chunk_size = 1024  # max is 1024 according to protocol
 
     # setup initial communication
     SAD = int_to_hex_list(start_addr)
@@ -189,8 +187,7 @@ def write_img(dev, img, start_addr, size, verify=False):
                 chunk = f.read(chunk_size)
                 totalread += chunk_size
                 pbar.update(len(chunk))
-
-    
+ 
     if verify:
         with tempfile.NamedTemporaryFile(prefix='.hidden_', delete=False) as tmp_file, open(img, 'rb') as cmp_file:
             read_img(dev, tmp_file.name, start_addr, size)
@@ -223,8 +220,7 @@ def main():
 
     subparsers.add_parser("info", help="Show flasher information")
 
-    args = parser.parse_args()
-        
+    args = parser.parse_args()        
     if args.command in commands:
         dev = RAConnect(VENDOR_ID, PRODUCT_ID)
         area_cfg = get_area_info(dev)
