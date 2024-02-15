@@ -12,7 +12,7 @@ setup(
     description=("Flasher for the built in ROM bootloader for Renesas RA microcontrollers"),
     license="GNU",
     keywords="Renesas RA chipset flasher",
-    packages=['src', 'tests'],
+    packages=['raflash', 'tests'],
     install_requires=[
         'exceptiongroup>=1.2.0',
         'future>=0.18.3',
@@ -28,7 +28,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'raflash = src.RAFlasher:main',
+            'raflash = raflash.RAFlasher:main',
         ],
     },
     long_description=read('README.md'),

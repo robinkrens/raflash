@@ -21,8 +21,8 @@ import time
 import argparse
 import tempfile
 from tqdm import tqdm
-from src.RAConnect import *
-from src.RAPacker import *
+from raflash.RAConnect import *
+from raflash.RAPacker import *
 
 VENDOR_ID = 0x045B
 PRODUCT_ID = 0x0261
