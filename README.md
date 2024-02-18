@@ -69,6 +69,11 @@ options:
 - [ ] ID Authentication
 - [ ] Baud rate (only for SCI)
 
+## Supported OS
+- [X] Linux
+- [X] Windows
+- [ ] Mac OS
+
 ## Supported interfaces
 - [X] USB
 - [ ] SCI
