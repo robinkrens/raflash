@@ -7,7 +7,7 @@ def read(fname):
 
 setup(
     name="raflash",
-    version="0.0.1",
+    version="0.0.2",
     author="Robin Krens",
     description=("Flash tool for ROM bootloader for Renesas RA MCUs"),
     license="GNU",
@@ -25,6 +25,7 @@ setup(
         'PyYAML>=6.0.1',
         'tomli>=2.0.1',
         'tqdm>=4.66.2',
+        'pyserial>=3.5',
     ],
     entry_points={
         'console_scripts': [
@@ -33,7 +34,9 @@ setup(
     },
     long_description_content_type='text/markdown',
     long_description=read('README.md'),
+    url="https://github.com/robinkrens/raflash",
     classifiers=[
         'Development Status :: 3 - Alpha',
+        'Topic :: Software Development :: Embedded Systems',
     ],
 )
