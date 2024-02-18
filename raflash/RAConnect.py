@@ -18,7 +18,6 @@
 import sys
 import time
 import serial
-import usb.core
 import serial.tools.list_ports
 from raflash.RAPacker import *
 
