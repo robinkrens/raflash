@@ -207,22 +207,26 @@ def main():
     write_parser.add_argument("--start_address", type=hex_type, default='0x0000', help="Start address")
     write_parser.add_argument("--size", type=hex_type, default=None, help="Size in bytes")
     write_parser.add_argument("--verify", action="store_true", help="Verify after writing")
+    write_parser.add_argument("--port", type=str, default=None, help="Port location")
     write_parser.add_argument("file_name", type=str, help="File name")
 
     read_parser = subparsers.add_parser("read", help="Read data from flash")
     read_parser.add_argument("--start_address", type=hex_type, default='0x0000', help="Start address")
     read_parser.add_argument("--size", type=hex_type, default=None, help="Size in bytes")
+    read_parser.add_argument("--port", type=str, default=None, help="Port location")
     read_parser.add_argument("file_name", type=str, help="File name")
 
     erase_parser = subparsers.add_parser("erase", help="Erase sectors")
     erase_parser.add_argument("--start_address", default='0x0000', type=hex_type, help="Start address")
     erase_parser.add_argument("--size", type=hex_type, help="Size")
+    erase_parser.add_argument("--port", type=str, default=None, help="Port location")
 
-    subparsers.add_parser("info", help="Show flasher information")
+    info_parser = subparsers.add_parser("info", help="Show flasher information")
+    info_parser.add_argument("--port", type=str, default=None, help="Port location")
 
     args = parser.parse_args()        
     if args.command in commands:
-        dev = RAConnect(VENDOR_ID, PRODUCT_ID)
+        dev = RAConnect(VENDOR_ID, PRODUCT_ID, args.port)
         area_cfg = get_area_info(dev)
         dev.set_chip_layout(area_cfg)
         commands[args.command](dev, args)

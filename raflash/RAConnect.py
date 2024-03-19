@@ -25,7 +25,7 @@ MAX_TRANSFER_SIZE = 2048 + 6 # include header and footer
 
 
 class RAConnect:
-    def __init__(self, vendor_id, product_id):
+    def __init__(self, vendor_id, product_id, port=None):
         self.vendor_id = vendor_id
         self.product_id = product_id
         self.max_tries = 20
@@ -34,7 +34,7 @@ class RAConnect:
         self.chip_layout = []
         self.sel_area = 0 # default to Area 0
 
-        self.find_device()
+        self.find_device(port)
         status_conn = self.inquire_connection()
         if not status_conn:
             self.confirm_connection()
@@ -47,8 +47,9 @@ class RAConnect:
 
         return None
 
-    def find_device(self):
-        port = self.find_port()
+    def find_device(self, port):
+        if port is None:
+            port = self.find_port()
         try:
             self.dev = serial.Serial(port, 9600)
         except Exception as err:
